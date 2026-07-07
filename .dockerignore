@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+*.pyo
+tests/
+.git
+.venv/
+data/
+*.db
+docs/
+static-site/
+*.md
+LICENSE
+.env
+.env.*
+.claude/
+release.sh
