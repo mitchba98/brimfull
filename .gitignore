@@ -227,3 +227,4 @@ CLAUDE.md
 static-site/
 data/
 release.sh
+*__pycache__*
