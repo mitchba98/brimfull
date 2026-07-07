@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+.claude
+.env
+__pycache__/
+brimfull-mobile-img.jpeg
+docs/
+CLAUDE.md
+*.swp
+static-site/
