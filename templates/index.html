@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 mb-0">Servers <span class="badge bg-secondary ms-1">{{ servers|length }}</span></h1>
+  {% if servers %}
+  <div class="server-filter-bar flex-shrink-0">
+    <button class="btn btn-sm btn-outline-secondary active" onclick="filterServers('all', this)">All</button>
+    <button class="btn btn-sm btn-outline-secondary" onclick="filterServers('ok', this)">Healthy</button>
+    <button class="btn btn-sm btn-outline-secondary" onclick="filterServers('warning', this)">Warning</button>
+    <button class="btn btn-sm btn-outline-secondary" onclick="filterServers('critical', this)">Critical</button>
+  </div>
+  {% endif %}
+</div>
+<div class="row g-3" id="serverGrid">
+{% for s in servers %}
+<div class="col-sm-6 col-xl-4" data-status="{{ s.status }}">
+  <a href="/server/{{ s.id }}" class="card h-100 text-decoration-none server-card status-{{ s.status }}">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start mb-1">
+        <h5 class="card-title mb-0 text-truncate">{{ s.label or s.hostname }}</h5>
+        <div class="d-flex gap-1 flex-shrink-0 ms-2">
+          {% if s.muted %}<span class="badge bg-secondary">muted</span>{% endif %}
+          <span class="badge status-badge-{{ s.status }}">{{ s.status }}</span>
+        </div>
+      </div>
+      {% if s.label %}<p class="text-muted small mb-2">{{ s.hostname }}</p>{% endif %}
+      {% if s.metrics %}
+      <div class="d-flex gap-3 small text-muted mt-2">
+        <span>CPU <strong class="text-{{ 'danger' if s.metrics.cpu_percent >= thresholds.cpu_critical else 'warning' if s.metrics.cpu_percent >= thresholds.cpu_warning else 'light' }}">{{ "%.0f"|format(s.metrics.cpu_percent) }}%</strong></span>
+        <span>MEM <strong class="text-{{ 'danger' if s.metrics.mem_percent >= thresholds.mem_critical else 'warning' if s.metrics.mem_percent >= thresholds.mem_warning else 'light' }}">{{ "%.0f"|format(s.metrics.mem_percent) }}%</strong></span>
+        {% if s.worst_disk %}
+        <span>DISK <strong class="text-{{ 'danger' if s.worst_disk.percent_used >= thresholds.disk_critical else 'warning' if s.worst_disk.percent_used >= thresholds.disk_warning else 'light' }}">{{ "%.0f"|format(s.worst_disk.percent_used or 0) }}%</strong></span>
+        {% endif %}
+      </div>
+      {% endif %}
+      <p class="text-muted small mt-2 mb-0">{{ s.last_seen_at | timeago }}</p>
+      <div class="server-bucket-icon" data-status="{{ s.status }}"></div>
+    </div>
+  </a>
+</div>
+{% else %}
+<div class="col-12">
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <div id="emptyStateBucket" style="display:inline-flex; margin-bottom:20px;"></div>
+      <h5 class="mb-2">No servers yet</h5>
+      <p class="text-muted mb-4" style="font-size:15px;">Head to Settings to get your install command and connect your first server.</p>
+      {% if not readonly %}
+      <a href="/settings" class="btn btn-primary">Get install instructions &rarr;</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endfor %}
+</div>
+
+<script>
+function filterServers(status, btn) {
+  document.querySelectorAll('.server-filter-bar .btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('#serverGrid > [data-status]').forEach(function (col) {
+    col.style.display = (status === 'all' || col.dataset.status === status) ? '' : 'none';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.server-bucket-icon[data-status]').forEach(function (el) {
+    var state = STATUS_STATES[el.dataset.status] || STATUS_STATES.offline;
+    el.innerHTML = bucketSVG(state, 36);
+  });
+  var emptyBucket = document.getElementById('emptyStateBucket');
+  if (emptyBucket) emptyBucket.innerHTML = bucketSVG(STATUS_STATES.ok, 80);
+});
+</script>
+{% endblock %}

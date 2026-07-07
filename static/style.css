@@ -1,0 +1,367 @@
+/* ── Keyframes (from static site) ───────────────────────── */
+@keyframes bf-slosh { to { transform: translateX(-40px); } }
+@keyframes bf-bob   { 0%,100% { transform: translateY(0); } 50% { transform: translateY(0.7px); } }
+@keyframes bf-blink { 0%,91%,100% { transform: scaleY(1); } 95% { transform: scaleY(0.12); } }
+@keyframes bf-drop  { 0% { transform: translateY(0); opacity: 0; } 18% { opacity: 1; } 100% { transform: translateY(20px); opacity: 0; } }
+
+.bf-blink { transform-box: fill-box; transform-origin: center; animation: bf-blink 3.5s ease infinite; }
+.bf-bob   { transform-box: fill-box; transform-origin: center; animation: bf-bob 2s ease-in-out infinite; }
+
+/* ── Design tokens ───────────────────────────────────────── */
+:root {
+  --bf-bg:         #F3EEE3;
+  --bf-bg-card:    #FBF8F2;
+  --bf-bg-alt:     #EDE6D8;
+  --bf-border:     #E6DFD0;
+  --bf-text:       #1C1815;
+  --bf-muted:      #6E665A;
+  --bf-muted-2:    #9A9080;
+  --bf-accent:     #2840C8;
+  --bf-ok:         #128A5E;
+  --bf-warn:       #C9820B;
+  --bf-crit:       #CF4034;
+  --bf-offline:    #9A9080;
+
+  /* Bootstrap overrides */
+  --bs-body-bg:           var(--bf-bg);
+  --bs-body-color:        var(--bf-text);
+  --bs-border-color:      var(--bf-border);
+  --bs-card-bg:           var(--bf-bg-card);
+  --bs-card-border-color: var(--bf-border);
+  --bs-secondary-color:   var(--bf-muted);
+  --bs-link-color:        var(--bf-accent);
+  --bs-link-hover-color:  var(--bf-accent);
+  --bs-code-color:        var(--bf-accent);
+}
+
+/* ── Base ────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bf-bg);
+  color: var(--bf-text);
+  font-family: 'Schibsted Grotesk', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--bf-accent); color: var(--bf-bg); }
+
+/* ── Navbar ──────────────────────────────────────────────── */
+.navbar {
+  background: var(--bf-bg) !important;
+  border-bottom: 1px solid var(--bf-border) !important;
+}
+
+.navbar-brand {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.03em;
+  color: var(--bf-text) !important;
+  gap: 10px;
+}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.card {
+  background: var(--bf-bg-card);
+  border: 1px solid var(--bf-border);
+  border-radius: 13px;
+}
+
+/* ── Typography ──────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Schibsted Grotesk', sans-serif;
+  letter-spacing: -0.03em;
+  color: var(--bf-text);
+}
+
+.text-muted { color: var(--bf-muted) !important; }
+
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+code {
+  background: var(--bf-bg-alt);
+  color: var(--bf-text);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.85em;
+}
+
+pre {
+  background: var(--bf-bg-alt);
+  border: 1px solid var(--bf-border);
+  border-radius: 13px;
+  padding: 18px 20px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--bf-text);
+  overflow-x: auto;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+pre.bg-black,
+code.bg-black { color: #EDE6D8; }
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn {
+  font-family: 'Schibsted Grotesk', sans-serif;
+  font-weight: 600;
+  border-radius: 9px;
+  font-size: 13.5px;
+}
+
+.btn-primary {
+  background: var(--bf-accent);
+  border-color: var(--bf-accent);
+  color: #fff;
+}
+.btn-primary:hover { background: #1e30a0; border-color: #1e30a0; }
+
+.btn-outline-primary {
+  border-color: var(--bf-accent);
+  color: var(--bf-accent);
+}
+.btn-outline-primary:hover { background: var(--bf-accent); color: #fff; }
+
+.btn-outline-secondary {
+  border-color: var(--bf-border);
+  color: var(--bf-muted);
+  background: var(--bf-bg-card);
+}
+.btn-outline-secondary:hover { background: var(--bf-bg-alt); color: var(--bf-text); border-color: var(--bf-border); }
+
+.btn-outline-secondary.active {
+  background: var(--bf-text);
+  color: var(--bf-bg);
+  border-color: var(--bf-text);
+}
+
+.btn-outline-danger { border-color: var(--bf-crit); color: var(--bf-crit); }
+.btn-outline-danger:hover { background: var(--bf-crit); color: #fff; border-color: var(--bf-crit); }
+
+.btn-outline-warning { border-color: var(--bf-warn); color: var(--bf-warn); }
+.btn-outline-warning:hover { background: var(--bf-warn); color: #fff; border-color: var(--bf-warn); }
+
+/* ── Badges ──────────────────────────────────────────────── */
+.badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.bg-secondary { background: var(--bf-bg-alt) !important; color: var(--bf-muted) !important; border: 1px solid var(--bf-border); }
+
+.status-badge-ok       { background: var(--bf-ok);      color: #fff; }
+.status-badge-warning  { background: var(--bf-warn);    color: #fff; }
+.status-badge-critical { background: var(--bf-crit);    color: #fff; }
+.status-badge-offline  { background: var(--bf-offline); color: #fff; }
+
+/* ── Forms ───────────────────────────────────────────────── */
+.form-control, .form-select {
+  background: var(--bf-bg-card);
+  border-color: var(--bf-border);
+  color: var(--bf-text);
+  border-radius: 9px;
+  font-family: 'Schibsted Grotesk', sans-serif;
+}
+
+.form-control:focus, .form-select:focus {
+  background: var(--bf-bg-card);
+  border-color: var(--bf-accent);
+  color: var(--bf-text);
+  box-shadow: 0 0 0 3px rgba(40,64,200,0.12);
+}
+
+.form-text { color: var(--bf-muted); font-size: 12px; }
+
+.form-label { font-weight: 600; font-size: 14px; color: var(--bf-text); }
+
+.form-check-input:checked { background-color: var(--bf-accent); border-color: var(--bf-accent); }
+
+/* ── Tables ──────────────────────────────────────────────── */
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--bf-text);
+  --bs-table-border-color: var(--bf-border);
+  --bs-table-striped-bg: var(--bf-bg-alt);
+}
+
+.table-dark {
+  --bs-table-bg: var(--bf-bg-alt);
+  --bs-table-color: var(--bf-text);
+  --bs-table-border-color: var(--bf-border);
+}
+
+.table th { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bf-muted); }
+
+/* ── Alerts ──────────────────────────────────────────────── */
+.alert { border-radius: 13px; font-size: 14px; }
+.alert-success { background: rgba(18,138,94,0.1);  border-color: rgba(18,138,94,0.3);  color: var(--bf-ok); }
+.alert-warning { background: rgba(201,130,11,0.1); border-color: rgba(201,130,11,0.3); color: var(--bf-warn); }
+.alert-danger  { background: rgba(207,64,52,0.1);  border-color: rgba(207,64,52,0.3);  color: var(--bf-crit); }
+
+/* ── Server cards (index page) ───────────────────────────── */
+.server-card {
+  position: relative;
+  border-left: 3px solid transparent;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  color: var(--bf-text);
+  text-decoration: none;
+}
+.server-card:hover {
+  border-color: var(--bf-accent);
+  box-shadow: 0 4px 16px rgba(40,64,200,0.1);
+  color: var(--bf-text);
+}
+
+.status-ok       { border-left-color: var(--bf-ok) !important; }
+.status-warning  { border-left-color: var(--bf-warn) !important; }
+.status-critical { border-left-color: var(--bf-crit) !important; }
+.status-offline  { border-left-color: var(--bf-offline) !important; opacity: 0.75; }
+
+/* ── Metric value colours (server cards + detail) ────────── */
+.text-danger  { color: var(--bf-crit) !important; }
+.text-warning { color: var(--bf-warn) !important; }
+.text-light   { color: var(--bf-text) !important; }
+
+/* ── Server detail stats grid (cup + 4 stats wrap-around) ── */
+.server-stats-grid {
+  display: grid;
+  grid-template-columns: 180px 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 12px;
+}
+.server-stats-cup {
+  grid-row: 1 / 3;
+}
+@media (max-width: 576px) {
+  .server-stats-grid { grid-template-columns: 120px 1fr 1fr; }
+}
+
+/* ── Server detail stat boxes ────────────────────────────── */
+.stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--bf-text);
+}
+
+.stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bf-muted);
+  margin-top: 6px;
+}
+
+/* ── Chart cards grid ────────────────────────────────────── */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .chart-grid-3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+.chart-card {
+  background: var(--bf-bg-card);
+  border: 1px solid var(--bf-border);
+  border-radius: 13px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bf-muted);
+  margin-bottom: 12px;
+}
+
+.chart-card canvas {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Border separator in notification forms ──────────────── */
+.border-bottom { border-bottom-color: var(--bf-border) !important; }
+
+/* ── Server list filters ─────────────────────────────────── */
+.server-filter-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.server-filter-bar .btn {
+  font-size: 12px;
+  padding: 5px 12px;
+}
+
+.server-filter-bar .btn.active {
+  background: var(--bf-text);
+  color: var(--bf-bg);
+  border-color: var(--bf-text);
+}
+
+/* ── Copy button ─────────────────────────────────────────── */
+.copy-wrap {
+  position: relative;
+}
+
+.copy-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 5px;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  padding: 3px 6px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+  display: inline-flex;
+  align-items: center;
+}
+.copy-btn:hover { color: #fff; background: rgba(255,255,255,0.15); }
+
+.copy-btn-inline {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.copy-btn-pre {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+/* ── Server card bucket icon ─────────────────────────────── */
+.server-bucket-icon {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  opacity: 0.85;
+  line-height: 0;
+}

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Brimfull{% endblock %} — knows before it overflows</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg border-bottom mb-4">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+      <div id="nav-logo" style="display:flex;"></div>
+      <span style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:17px; letter-spacing:-.03em;">brimfull</span>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--bf-muted); font-weight:500; margin-left:2px;">v{{ app_version }}</span>
+      <span id="update-badge" style="display:none; background:var(--bf-warn); color:#fff; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; letter-spacing:0.08em; border-radius:6px; padding:3px 7px; margin-left:4px;">update available</span>
+    </a>
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <a href="{{ site_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary d-flex align-items-center p-1" title="brimfull.dev">
+        <img src="{{ url_for('static', filename='favicon.svg') }}" width="20" height="20" alt="brimfull.dev" style="border-radius:4px;">
+      </a>
+      <a href="{{ github_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary d-flex align-items-center" style="padding:4px 7px;" title="GitHub">
+        <svg width="16" height="16" viewBox="0 0 98 96" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"/></svg>
+      </a>
+      {% if request.path == '/settings' %}
+      <a href="/" class="btn btn-sm btn-outline-secondary">Dashboard</a>
+      {% elif not readonly %}
+      <a href="/settings" class="btn btn-sm btn-outline-secondary">Settings</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+<main class="container-fluid px-4">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='bucket.js') }}"></script>
+{% block scripts %}{% endblock %}
+<script>
+(function() {
+  fetch("{{ site_url }}/latest-version.json", {cache: "force-cache"})
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.version && data.version !== "{{ app_version }}") {
+        var badge = document.getElementById("update-badge");
+        if (badge) { badge.style.display = "inline"; badge.title = "v" + data.version + " available"; }
+      }
+    })
+    .catch(function() {});
+})();
+</script>
+</body>
+</html>

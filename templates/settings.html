@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<h1 class="h4 mb-4">Settings</h1>
+<div class="row g-4">
+
+  <!-- Left column -->
+  <div class="col-12 col-md-6 d-flex flex-column gap-4">
+
+    <!-- API Key -->
+    <div class="card p-4">
+      <h5 class="mb-3">API Key</h5>
+      <p class="text-muted small mb-2">All servers use this key in the <code>X-Brimfull-Key</code> header.</p>
+      <div class="copy-wrap mb-3">
+        <code class="p-2 rounded bg-black user-select-all d-block" style="word-break:break-all;">{{ account.api_key }}</code>
+        <button class="copy-btn copy-btn-inline" title="Copy" onclick="copyCode(this)">{% include 'icons/clipboard.svg' %}</button>
+      </div>
+      <form method="post">
+        <input type="hidden" name="action" value="rotate_key">
+        <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Rotate key? All agents will stop reporting until updated.')">Rotate Key</button>
+      </form>
+    </div>
+
+    <!-- Thresholds -->
+    <div class="card p-4">
+      <h5 class="mb-3">Alert Thresholds</h5>
+      <form method="post">
+        <input type="hidden" name="action" value="save_thresholds">
+        {% for label, warn_key, crit_key in [
+            ("CPU", "cpu_warning", "cpu_critical"),
+            ("Memory", "mem_warning", "mem_critical"),
+            ("Disk", "disk_warning", "disk_critical"),
+        ] %}
+        <div class="mb-3">
+          <label class="form-label">{{ label }}</label>
+          <div class="d-flex gap-2">
+            <div class="flex-grow-1">
+              <input type="number" class="form-control form-control-sm" name="{{ warn_key }}"
+                value="{{ thresholds[warn_key]|int }}" min="1" max="99" placeholder="Warning %">
+              <div class="form-text">Warning %</div>
+            </div>
+            <div class="flex-grow-1">
+              <input type="number" class="form-control form-control-sm" name="{{ crit_key }}"
+                value="{{ thresholds[crit_key]|int }}" min="1" max="99" placeholder="Critical %">
+              <div class="form-text">Critical %</div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        <button class="btn btn-sm btn-primary">Save Thresholds</button>
+      </form>
+    </div>
+
+    <!-- Servers -->
+    <div class="card p-4">
+      <h5 class="mb-3">Servers</h5>
+      {% if servers %}
+      <table class="table table-sm table-dark mb-0">
+        <thead><tr><th>Hostname</th><th>Last seen</th><th>Notifications</th><th></th></tr></thead>
+        <tbody>
+        {% for s in servers %}
+        <tr>
+          <td><a href="/server/{{ s.id }}" class="text-decoration-none">{{ s.label or s.hostname }}</a></td>
+          <td class="text-muted small">{{ s.last_seen_at|timeago if s.last_seen_at else "never" }}</td>
+          <td>
+            <form method="post" class="d-inline">
+              <input type="hidden" name="action" value="mute_server">
+              <input type="hidden" name="server_id" value="{{ s.id }}">
+              <input type="hidden" name="muted" value="{{ '0' if s.muted else '1' }}">
+              <button class="btn btn-sm btn-outline-{{ 'warning' if s.muted else 'secondary' }}">
+                {{ "Unmute" if s.muted else "Mute" }}
+              </button>
+            </form>
+          </td>
+          <td class="text-end">
+            <form method="post" class="d-inline" onsubmit="return confirm('Delete ' + {{ (s.label or s.hostname)|tojson }} + ' and all its data?')">
+              <input type="hidden" name="action" value="delete_server">
+              <input type="hidden" name="server_id" value="{{ s.id }}">
+              <button class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="text-muted small mb-0">No servers yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Export -->
+    <div class="card p-4">
+      <h5 class="mb-2">Data</h5>
+      <a href="/export/db" class="btn btn-sm btn-outline-secondary">Download SQLite backup</a>
+    </div>
+
+  </div>
+
+  <!-- Right column -->
+  <div class="col-12 col-md-6 d-flex flex-column gap-4">
+
+    <!-- Install Instructions -->
+    <div class="card p-4">
+      <h5 class="mb-3">Install Agent</h5>
+      <p class="text-muted small">Run on each server you want to monitor:</p>
+      <div class="copy-wrap">
+        <pre class="bg-black p-3 rounded small"><code>curl -sSL {{ host_url }}/agent/agent.sh -o /usr/local/bin/brimfull-agent.sh
+chmod +x /usr/local/bin/brimfull-agent.sh</code></pre>
+        <button class="copy-btn copy-btn-pre" title="Copy" onclick="copyCode(this)">{% include 'icons/clipboard.svg' %}</button>
+      </div>
+      <p class="text-muted small mt-2">Then add to crontab (<code>crontab -e</code>):</p>
+      <div class="copy-wrap">
+        <pre class="bg-black p-3 rounded small"><code>*/5 * * * * BRIMFULL_URL={{ host_url }} BRIMFULL_KEY={{ account.api_key }} /usr/local/bin/brimfull-agent.sh >> /var/log/brimfull-agent.log 2>&1</code></pre>
+        <button class="copy-btn copy-btn-pre" title="Copy" onclick="copyCode(this)">{% include 'icons/clipboard.svg' %}</button>
+      </div>
+      <p class="text-muted small mt-2">To use a custom display name instead of the system hostname:</p>
+      <div class="copy-wrap">
+        <pre class="bg-black p-3 rounded small"><code>*/5 * * * * BRIMFULL_URL={{ host_url }} BRIMFULL_KEY={{ account.api_key }} BRIMFULL_HOSTNAME=my-server /usr/local/bin/brimfull-agent.sh >> /var/log/brimfull-agent.log 2>&1</code></pre>
+        <button class="copy-btn copy-btn-pre" title="Copy" onclick="copyCode(this)">{% include 'icons/clipboard.svg' %}</button>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="card p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Notifications</h5>
+        <form method="post" class="d-inline">
+          <input type="hidden" name="action" value="test_notify">
+          <button class="btn btn-sm btn-outline-secondary">Test</button>
+        </form>
+      </div>
+
+      {% for handler in handlers %}
+      <form method="post" class="{% if not loop.last %}mb-4 pb-4 border-bottom{% endif %}">
+        <input type="hidden" name="action" value="save_channel">
+        <input type="hidden" name="channel" value="{{ handler.CHANNEL }}">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <strong class="small">{{ handler.LABEL }}</strong>
+          <div class="form-check form-switch ms-auto mb-0">
+            <input class="form-check-input" type="checkbox" name="{{ handler.CHANNEL }}_enabled"
+              {% if notif.get(handler.CHANNEL, {}).get('enabled') %}checked{% endif %}>
+          </div>
+        </div>
+        {% for field in handler.FIELDS %}
+        {% set stored = notif.get(handler.CHANNEL, {}).get(field.name, '') %}
+        <input type="{{ field.type }}" class="form-control form-control-sm mb-1"
+          name="{{ field.name }}"
+          {% if field.type != 'password' %}value="{{ stored }}"{% endif %}
+          placeholder="{% if field.type == 'password' and stored %}••••••••••• (leave blank to keep){% else %}{{ field.label }}{% if field.placeholder %} (e.g. {{ field.placeholder }}){% endif %}{% endif %}">
+        {% endfor %}
+        <button class="btn btn-sm btn-outline-primary mt-1">Save</button>
+      </form>
+      {% endfor %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const CHECK_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+function copyCode(btn) {
+  const wrap = btn.closest('.copy-wrap');
+  const el = wrap.querySelector('code') || wrap.querySelector('pre');
+  navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = CHECK_ICON;
+    setTimeout(() => btn.innerHTML = orig, 1500);
+  });
+}
+</script>
+{% endblock %}

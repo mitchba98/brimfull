@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% block title %}{{ server.label or server.hostname }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="/" class="btn btn-sm btn-outline-secondary">&larr;</a>
+  <h1 class="h4 mb-0">{{ server.label or server.hostname }}</h1>
+  <div class="d-flex gap-1">
+    <span class="badge status-badge-{{ server.status }}">{{ server.status }}</span>
+    {% if server.muted %}<span class="badge bg-secondary">muted</span>{% endif %}
+  </div>
+</div>
+
+<div class="server-stats-grid mb-4">
+  <div class="card server-stats-cup d-flex align-items-center justify-content-center p-3">
+    <div id="serverBucketIcon" data-status="{{ server.status }}"></div>
+  </div>
+  <div class="card text-center p-3">
+    <div class="stat-value">{{ "%.0f"|format(server.metrics.cpu_percent or 0) if server.metrics else "—" }}%</div>
+    <div class="stat-label">CPU</div>
+  </div>
+  <div class="card text-center p-3">
+    <div class="stat-value">{{ "%.0f"|format(server.metrics.mem_percent or 0) if server.metrics else "—" }}%</div>
+    <div class="stat-label">Memory</div>
+  </div>
+  <div class="card text-center p-3">
+    <div class="stat-value">{{ "%.0f"|format(server.worst_disk.percent_used or 0) if server.worst_disk else "—" }}%</div>
+    <div class="stat-label">Worst Disk</div>
+  </div>
+  <div class="card text-center p-3">
+    <div class="stat-value" style="font-size:1.1rem;">{{ server.agent_version or "—" }}</div>
+    <div class="stat-label">Agent Version</div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h6 class="text-muted mb-3">Disk Mounts</h6>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Mount</th><th>Used</th><th>Total</th><th>%</th></tr></thead>
+        <tbody>
+        {% for disk in disks %}
+        <tr>
+          <td><code>{{ disk.mount_point }}</code></td>
+          <td>{{ "%.1f"|format(disk.used_gb or 0) }} GB</td>
+          <td>{{ "%.1f"|format(disk.total_gb or 0) }} GB</td>
+          <td class="text-{{ 'danger' if disk.percent_used >= 90 else 'warning' if disk.percent_used >= 75 else '' }}">
+            {{ "%.0f"|format(disk.percent_used or 0) }}%
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h6 class="text-muted mb-2">Server Info</h6>
+      <dl class="row small mb-0">
+        <dt class="col-5 text-muted">Hostname</dt><dd class="col-7">{{ server.hostname }}</dd>
+        <dt class="col-5 text-muted">Last seen</dt><dd class="col-7">{{ server.last_seen_at | timeago }}</dd>
+        <dt class="col-5 text-muted">Added</dt><dd class="col-7">{{ server.created_at | timeago }}</dd>
+        {% if server.metrics and server.metrics.uptime_seconds %}
+        <dt class="col-5 text-muted">Uptime</dt>
+        <dd class="col-7">{{ (server.metrics.uptime_seconds // 86400) }}d {{ ((server.metrics.uptime_seconds % 86400) // 3600) }}h</dd>
+        {% endif %}
+      </dl>
+    </div>
+  </div>
+</div>
+
+<!-- History -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h6 class="text-muted mb-0">History</h6>
+  <div class="btn-group btn-group-sm">
+    <button class="btn btn-outline-secondary active" onclick="loadHistory(24, this)">24h</button>
+    <button class="btn btn-outline-secondary" onclick="loadHistory(168, this)">7d</button>
+    <button class="btn btn-outline-secondary" onclick="loadHistory(720, this)">30d</button>
+  </div>
+</div>
+<div id="chartGrid" class="chart-grid chart-grid-3 mb-4"></div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-5">
+    <div class="card p-3 h-100">
+      <h6 class="text-muted mb-3">Alerts</h6>
+      {% if alerts %}
+      <table class="table table-sm mb-0">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Detail</th>
+            <th>Triggered</th>
+            <th>Status</th>
+            <th>Notified</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for alert in alerts %}
+        <tr>
+          <td><span class="font-mono" style="font-size:12px;">{{ alert.alert_type }}</span></td>
+          <td class="text-muted small">
+            {% if alert.mount_point %}<code>{{ alert.mount_point }}</code>{% endif %}
+            {% if alert.threshold_percent %}&gt;{{ "%.0f"|format(alert.threshold_percent) }}%{% endif %}
+          </td>
+          <td class="text-muted small">{{ alert.triggered_at | timeago }}</td>
+          <td>
+            {% if alert.resolved_at %}
+            <span class="badge status-badge-ok">resolved</span>
+            {% else %}
+            <span class="badge status-badge-critical">active</span>
+            {% endif %}
+          </td>
+          <td class="text-muted small">{{ alert.notification_count }}×</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="text-muted small mb-0">No alerts recorded for this server.</p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card p-3 h-100">
+      <h6 class="text-muted mb-3">Metric Readings <span class="text-muted" style="font-size:11px;font-weight:400;letter-spacing:0.04em;text-transform:uppercase;">— sampled</span></h6>
+      <div style="max-height:340px;overflow-y:auto;">
+        <table class="table table-sm mb-0">
+          <thead id="metricsHistoryHead" style="position:sticky;top:0;background:var(--bf-bg-card);">
+            <tr><th>Time</th><th>CPU</th><th>Mem</th></tr>
+          </thead>
+          <tbody id="metricsHistoryBody">
+            <tr><td colspan="3" class="text-muted small">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script>
+function esc(s) { const d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+
+const charts = {};
+const SERVER_ID = {{ server.id }};
+const CANVAS_HEIGHT = 180;
+
+function makeCard(id, title) {
+  const card = document.createElement('div');
+  card.className = 'chart-card';
+  const label = document.createElement('div');
+  label.className = 'chart-card-title';
+  label.textContent = title;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:relative;height:' + CANVAS_HEIGHT + 'px;flex:1;min-height:0;';
+  const canvas = document.createElement('canvas');
+  canvas.id = id;
+  wrap.appendChild(canvas);
+  card.appendChild(label);
+  card.appendChild(wrap);
+  return { card, canvas };
+}
+
+function dotRadii(count, every) {
+  return Array.from({length: count}, (_, i) => i % every === 0 ? 2 : 0);
+}
+
+function render(id, labels, data, label, color, dotEvery) {
+  const radii = dotRadii(labels.length, dotEvery);
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), {
+    type: 'line',
+    data: { labels, datasets: [{ label, data, borderColor: color, backgroundColor: color + '18',
+      fill: true, tension: 0.2, pointRadius: radii, pointHoverRadius: 4, borderWidth: 1.5 }] },
+    options: {
+      animation: false,
+      maintainAspectRatio: false,
+      scales: {
+        y: { min: 0, max: 100, grid: { color: '#E6DFD0' }, ticks: { color: '#9A9080' } },
+        x: { display: false },
+      },
+      plugins: { legend: { labels: { color: '#6E665A', boxWidth: 12 } } },
+    },
+  });
+}
+
+async function loadHistory(hours, btn) {
+  document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  const resp = await fetch(`/api/v1/server/${SERVER_ID}/history?hours=${hours}`);
+  const data = await resp.json();
+  const labels = data.metrics.map(m => m.t);
+
+  // backend sends every 30min/2h/6h; dots every 4th/6th/8th of those ≈ 12 dots per chart
+  const dotEvery = hours <= 24 ? 4 : hours <= 168 ? 6 : 8;
+
+  const grid = document.getElementById('chartGrid');
+  grid.innerHTML = '';
+
+  const cpu = makeCard('cpuChart', 'CPU %');
+  grid.appendChild(cpu.card);
+  render('cpuChart', labels, data.metrics.map(m => m.cpu), 'CPU %', '#2840C8', dotEvery);
+
+  const mem = makeCard('memChart', 'Memory %');
+  grid.appendChild(mem.card);
+  render('memChart', labels, data.metrics.map(m => m.mem), 'Memory %', '#128A5E', dotEvery);
+
+  const diskEntries = Object.entries(data.disks);
+  const diskMounts = diskEntries.map(([m]) => m);
+  const diskByTime = {};
+  for (const [mount, points] of diskEntries) {
+    for (const p of points) {
+      if (!diskByTime[p.t]) diskByTime[p.t] = {};
+      diskByTime[p.t][mount] = p.v;
+    }
+  }
+
+  const thead = document.getElementById('metricsHistoryHead');
+  thead.innerHTML = '<tr><th>Time</th><th>CPU</th><th>Mem</th>' +
+    diskMounts.map(m => `<th>${esc(m)}</th>`).join('') + '</tr>';
+
+  const tbody = document.getElementById('metricsHistoryBody');
+  const rows = [...data.metrics].reverse();
+  const totalCols = 3 + diskMounts.length;
+  tbody.innerHTML = rows.length ? rows.map(m => {
+    const d = diskByTime[m.t] || {};
+    return `<tr>
+      <td class="text-muted small font-mono" style="white-space:nowrap;">${esc(m.t)}</td>
+      <td class="small">${m.cpu != null ? m.cpu.toFixed(1) + '%' : '—'}</td>
+      <td class="small">${m.mem != null ? m.mem.toFixed(1) + '%' : '—'}</td>
+      ${diskMounts.map(mt => `<td class="small">${d[mt] != null ? d[mt].toFixed(1) + '%' : '—'}</td>`).join('')}
+    </tr>`;
+  }).join('') : `<tr><td colspan="${totalCols}" class="text-muted small">No data.</td></tr>`;
+
+  if (diskEntries.length > 0) {
+    const { card, canvas } = makeCard('diskChart', 'Disk %');
+    grid.appendChild(card);
+    if (charts['diskChart']) charts['diskChart'].destroy();
+    const diskColors = ['#C9820B', '#2840C8', '#128A5E', '#CF4034', '#9A9080', '#8B5CF6'];
+    charts['diskChart'] = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: diskEntries[0][1].map(p => p.t),
+        datasets: diskEntries.map(([mount, points], i) => ({
+          label: mount,
+          data: points.map(p => p.v),
+          borderColor: diskColors[i % diskColors.length],
+          backgroundColor: 'transparent',
+          fill: false,
+          tension: 0.2,
+          pointRadius: dotRadii(points.length, dotEvery),
+          pointHoverRadius: 4,
+          borderWidth: 1.5,
+        })),
+      },
+      options: {
+        animation: false,
+        maintainAspectRatio: false,
+        scales: {
+          y: { min: 0, max: 100, grid: { color: '#E6DFD0' }, ticks: { color: '#9A9080' } },
+          x: { display: false },
+        },
+        plugins: { legend: { labels: { color: '#6E665A', boxWidth: 12, font: { size: 11 } } } },
+      },
+    });
+  }
+}
+
+loadHistory(24);
+
+document.addEventListener('DOMContentLoaded', function () {
+  const el = document.getElementById('serverBucketIcon');
+  if (el) {
+    const state = STATUS_STATES[el.dataset.status] || STATUS_STATES.offline;
+    el.innerHTML = bucketSVG(state, 60);
+  }
+});
+</script>
+{% endblock %}
