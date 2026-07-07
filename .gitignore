@@ -225,3 +225,4 @@ docs/
 CLAUDE.md
 *.swp
 static-site/
+data/

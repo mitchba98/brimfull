@@ -1,0 +1,14 @@
+services:
+  brimfull:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/data
+    environment:
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in your shell or a .env file}
+      - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY in your shell or a .env file}
+      - BASE_URL=${BASE_URL:?Set BASE_URL in your shell or a .env file (e.g. https://brimfull.yourdomain.com)}
+      - API_KEY=${API_KEY:-}
+      - DB_PATH=${DB_PATH:-/data/brimfull.db}  # optional: change if you want the DB stored elsewhere
+    restart: always

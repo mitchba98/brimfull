@@ -46,7 +46,7 @@ Open `http://your-server:5000` and log in with your `ADMIN_PASSWORD`.
 On the server you want to monitor, download the agent:
 
 ```bash
-curl -sSL https://your-brimfull-url/agent/v1.0.0/agent.sh -o /usr/local/bin/brimfull-agent.sh
+curl -sSL https://your-brimfull-url/agent/agent.sh -o /usr/local/bin/brimfull-agent.sh
 chmod +x /usr/local/bin/brimfull-agent.sh
 ```
 
